@@ -10,7 +10,7 @@ En esta primera versión, el contacto se realiza **fuera de la aplicación**, po
 **Dominio previsto:** [http://skatementor.live](http://skatementor.live)  
 **Infraestructura propuesta:** AWS, región `us-east-1`.
 
-> **Nota de alcance:** Este README está elaborado a partir de la propuesta APA, no de una inspección del código fuente o de una instancia desplegada. Los comandos estándar de Next.js son una guía de ejecución; las variables de entorno, rutas de carpetas, secretos y capturas deben contrastarse con el repositorio real antes de la entrega. El enlace público se indica como dominio previsto, no como despliegue verificado.
+> **Nota de alcance:** La sección técnica distingue claramente entre la infraestructura implementada y la propuesta académica. El estado real usa exportación estática de Next.js; los perfiles, cuentas y reseñas dinámicos se guardan temporalmente en el navegador y todavía no están conectados a MySQL ni a S3. El dominio se considera previsto hasta comprobar su despliegue público final.
 
 ### Tabla de contenido
 
@@ -35,12 +35,12 @@ En esta primera versión, el contacto se realiza **fuera de la aplicación**, po
 | **PM2** | Administración y reinicio del proceso de Next.js en el servidor. |
 | **Amazon EC2 (`t3.micro`)** | Servidor de aplicación en AWS. |
 | **Amazon EBS (`gp3`, 20 GB)** | Disco de la instancia, donde también reside MySQL. |
-| **Amazon S3** | Almacenamiento de fotografías de skaters y recursos estáticos. |
+| **Amazon S3** | Entrega de recursos estáticos de Next.js (`/_next/static`) en la configuración actual. |
 | **Amazon VPC + subred pública + Security Group** | Red virtual y reglas de acceso a EC2. |
 | **Elastic IP + Amazon Route 53** | Dirección IPv4 fija y resolución DNS del dominio. |
 | **Git, GitHub y GitHub Actions** | Versionamiento colaborativo, integración continua y despliegue mediante SSH. |
 
-El APA no confirma el uso de TypeScript, Tailwind CSS, Prisma, Docker, RDS o servicios de pago. **No deben añadirse como tecnologías implementadas sin comprobarlo en el repositorio.**
+El repositorio confirma React, Next.js, TypeScript y Tailwind CSS. La propuesta describe MySQL, PM2 y S3, pero MySQL todavía no está conectado al flujo de datos y las fotografías dinámicas no se cargan a S3.
 
 ## Getting Started
 
@@ -260,13 +260,13 @@ flowchart TD
     IP --> SG[Security Group: HTTP 80]
     SG --> APP[EC2 t3.micro: Next.js + Node.js + PM2]
     APP --> DB[(MySQL local / EBS gp3)]
-    APP --> S3[(Amazon S3: fotos y estáticos)]
+    APP --> S3[(Amazon S3: recursos estáticos)]
     APP --> C[Enlace de contacto externo]
     C --> M[WhatsApp o correo]
     GH[GitHub Actions] -->|Build y despliegue SSH| APP
 ```
 
-La aplicación sirve la interfaz y obtiene la información de perfiles de su capa de datos según la implementación real; MySQL permanece dentro de EC2, mientras que S3 guarda las imágenes. El contacto se abre hacia servicios externos. **El APA describe esta arquitectura como propuesta; los nombres concretos de rutas y funciones se deben validar contra el código.**
+La aplicación sirve una interfaz exportada estáticamente. Los perfiles iniciales viven en el código, mientras que los perfiles nuevos se guardan temporalmente en `localStorage` y los clips subidos en IndexedDB del navegador. MySQL y la carga dinámica a S3 están descritos como trabajo pendiente. El contacto se abre hacia servicios externos.
 
 ## Arquitectura del proyecto
 
@@ -274,7 +274,7 @@ La aplicación sirve la interfaz y obtiene la información de perfiles de su cap
 
 *Figura 1. Diagrama original de la propuesta APA de SkateMentor (noviembre de 2026).*
 
-La arquitectura se concentra en una sola EC2 `t3.micro` para reducir costos. La instancia está en una subred pública dentro de una VPC y recibe tráfico mediante Elastic IP. Route 53 asocia el dominio con esa IP; el Security Group controla los puertos de entrada; Node.js sirve Next.js, PM2 mantiene el proceso en ejecución y MySQL funciona en el propio servidor. Amazon S3 almacena fotografías y GitHub Actions coordina el build y el deploy por SSH.
+La arquitectura propuesta se concentra en una sola EC2 `t3.micro` para reducir costos. La instancia está en una subred pública dentro de una VPC y recibe tráfico mediante Elastic IP. Route 53 puede asociar el dominio con esa IP y el Security Group controla los puertos de entrada. En el despliegue configurado, GitHub Actions construye la exportación estática, copia el HTML a EC2 y sincroniza los recursos `/_next` con S3. MySQL todavía no participa en el registro ni en las reseñas dinámicas.
 
 **Alcance de la propuesta:** no utiliza balanceador de carga, Auto Scaling ni Amazon RDS; tampoco contempla Docker o un NAT Gateway en la arquitectura representada. El documento excluye HTTPS en esta primera fase. El diseño está orientado a un ejercicio académico de bajo costo, no a una infraestructura de producción con alta disponibilidad.
 
@@ -290,7 +290,7 @@ SkateMentor/
 ├── docs/
 │   ├── arquitectura/
 │   │   └── skatementor-aws.png      # Diagrama del APA (incluido aquí)
-│   └── evidencias/                 # Capturas reales que debe aportar el equipo
+│   └── evidencias/                 # Capturas reales de la interfaz
 ├── public/                         # Recursos locales públicos, si se utilizan
 ├── src/
 │   ├── app/                        # Rutas y páginas, si se usa App Router
@@ -310,28 +310,25 @@ Al incorporar el README al repositorio, sustituye esta estructura orientativa po
 
 ## Evidencias de funcionamiento
 
-Las capturas de esta sección deben mostrar **la aplicación y el despliegue reales**. El APA adjunto incluye el diagrama de arquitectura, pero **no contiene capturas de SkateMentor ejecutándose**. Por esta razón, los siguientes archivos están señalados como pendientes; no se han creado evidencias artificiales.
+Las siguientes capturas muestran la interfaz actual de SkateMentor.
 
-| Evidencia que debe adjuntarse | Ubicación propuesta en el repositorio | Qué debe demostrar |
-| --- | --- | --- |
-| **01. Landing page** | `docs/evidencias/01-landing.png` | Página inicial accesible. |
-| **02. Catálogo** | `docs/evidencias/02-catalogo.png` | Listado de skaters y modalidades. |
-| **03. Perfil y contacto** | `docs/evidencias/03-perfil-contacto.png` | Datos de un instructor y acceso a WhatsApp o correo. |
-| **04. Dominio público** | `docs/evidencias/04-dominio-publico.png` | Navegador mostrando `skatementor.live` con la aplicación cargada. |
-| **05. GitHub Actions** | `docs/evidencias/05-actions-deploy.png` | Ejecución exitosa de Build y Deploy. |
-| **06. PM2 en EC2** *(opcional)* | `docs/evidencias/06-pm2-ec2.png` | Proceso de la aplicación activo. |
+### Inicio de sesión
 
-Una vez agregadas las imágenes reales al repositorio, reemplaza este aviso con la visualización en Markdown, por ejemplo:
+![Inicio de sesión en SkateMentor](docs/evidencias/01-inicio-sesion.png)
 
-```markdown
-![Landing de SkateMentor](docs/evidencias/01-landing.png)
+*Figura 2. Página de acceso con cuenta autorizada y opción para crear una cuenta pública.*
+
+### Catálogo de skaters
+
 ![Catálogo de skaters](docs/evidencias/02-catalogo.png)
-![Perfil y contacto](docs/evidencias/03-perfil-contacto.png)
-![Dominio público](docs/evidencias/04-dominio-publico.png)
-![Build y Deploy exitosos](docs/evidencias/05-actions-deploy.png)
-```
 
-Evita que las capturas expongan contraseñas, tokens, claves SSH, variables privadas o información personal innecesaria.
+*Figura 3. Búsqueda de instructores, ciudades y modalidades disponibles.*
+
+### Registro de nuevo skater
+
+![Formulario para publicar un nuevo skater](docs/evidencias/03-nuevo-skater.png)
+
+*Figura 4. Formulario administrativo para crear un perfil público de instructor.*
 
 ## Recursos adicionales
 
@@ -349,11 +346,7 @@ La propuesta APA estima un costo de infraestructura de aproximadamente **USD 13,
 
 La instancia mantiene MySQL accesible únicamente desde `localhost` y el Security Group no debe abrir el puerto `3306`. Las imágenes S3 deben disponer de permisos ajustados a la forma en que se publican. Los respaldos con `mysqldump`, la protección de secretos y la revisión de Pull Requests son parte del procedimiento de operación esperado.
 
-**Pendiente antes de la entrega final:** incorporar la URL exacta de GitHub, confirmar los scripts de `package.json` y las variables reales, actualizar el árbol de carpetas según el código, añadir las capturas auténticas, comprobar el dominio público y adjuntar evidencia del workflow exitoso. Con ello, las seis secciones exigidas por la rúbrica quedarán documentadas con elementos verificables.
-
-## Evidencias del funcionamiento
-
----
+**Pendiente antes de la entrega final:** incorporar la URL exacta de GitHub, confirmar los scripts de `package.json` y las variables reales, actualizar el árbol de carpetas según el código, comprobar el dominio público y adjuntar evidencia del workflow exitoso. Con ello, las seis secciones exigidas por la rúbrica quedarán documentadas con elementos verificables.
 
 **Proyecto académico:** *SkateMentor: plataforma web para contratar clases con skaters profesionales*.  
 **Institución:** Universidad de la Costa (CUC), Ingeniería de Sistemas.  

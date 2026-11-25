@@ -18,5 +18,10 @@ export default function PreviewProfilePage() {
     );
   }
 
-  return <ProfileContent id={id} />;
+  return (
+    <ProfileContent
+      id={id}
+      returnPath={`/skater/preview/?id=${encodeURIComponent(id)}`}
+    />
+  );
 }

@@ -53,7 +53,7 @@ export default function Navbar() {
             <nav className="hidden md:flex items-center gap-space-lg">
               <Link
                 className="font-label-md text-label-md text-primary font-bold transition-colors"
-                href="/"
+                href="/#skatersGrid"
               >
                 Catálogo de Skaters
               </Link>

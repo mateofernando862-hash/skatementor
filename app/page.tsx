@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { SKATERS, type SkaterProfile } from "./data/skaters";
-import { isAdminEmail } from "../lib/auth";
+import { isAdminEmail, isValidAccountEmail } from "../lib/auth";
 import { deleteLocalVideo } from "../lib/local-media";
 
 const REGISTERED_SKATERS_KEY = "skatementor_registered_skaters";
@@ -20,6 +20,7 @@ export default function CatalogoPage() {
   const [selectedPrice, setSelectedPrice] = useState("all");
   const [registeredSkaters, setRegisteredSkaters] = useState<SkaterProfile[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [skaterToDelete, setSkaterToDelete] = useState<SkaterProfile | null>(null);
   const [hiddenDefaultSkaters, setHiddenDefaultSkaters] = useState<number[]>([]);
 
@@ -31,12 +32,16 @@ export default function CatalogoPage() {
 
     if (session) {
       try {
-        setIsAuthenticated(
-          isAdminEmail(decodeURIComponent(session))
-        );
+        const email = decodeURIComponent(session);
+        setIsAuthenticated(isValidAccountEmail(email));
+        setIsAdmin(isAdminEmail(email));
       } catch {
         setIsAuthenticated(false);
+        setIsAdmin(false);
       }
+    } else {
+      setIsAuthenticated(false);
+      setIsAdmin(false);
     }
 
     try {
@@ -328,6 +333,8 @@ export default function CatalogoPage() {
       {/* CATALOG & FILTER SECTION */}
       <section className="w-full py-space-xl" id="skatersGrid">
         <div className="max-w-6xl mx-auto px-gutter-mobile md:px-gutter flex flex-col gap-space-lg">
+          {isAuthenticated ? (
+            <>
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-space-sm">
             <div>
               <span className="font-label-sm text-label-sm text-primary tracking-widest uppercase">
@@ -337,7 +344,7 @@ export default function CatalogoPage() {
                 Catálogo de Skaters
               </h2>
             </div>
-            {isAuthenticated && hiddenDefaultSkaters.length < SKATERS.length && (
+            {isAdmin && hiddenDefaultSkaters.length < SKATERS.length && (
               <button
                 type="button"
                 onClick={clearDemoCatalog}
@@ -515,7 +522,7 @@ export default function CatalogoPage() {
                         >
                           Ver Perfil Completo
                         </Link>
-                        {isAuthenticated && (
+                        {isAdmin && (
                           <button
                             className="w-full inline-flex items-center justify-center gap-space-xs border border-error/30 bg-error-container/70 text-on-error-container hover:bg-error-container hover:border-error/50 font-label-md text-label-md py-2.5 rounded-xl transition-all cursor-pointer shadow-sm"
                             type="button"
@@ -551,6 +558,30 @@ export default function CatalogoPage() {
               >
                 Restablecer filtros
               </button>
+            </div>
+          )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center text-center gap-space-sm rounded-xl bg-surface-container-lowest p-space-xl shadow-sm">
+              <span className="material-symbols-outlined text-primary text-[40px]">
+                lock
+              </span>
+              <h2 className="font-headline-md text-headline-md text-on-surface">
+                Inicia sesión para explorar el catálogo
+              </h2>
+              <p className="max-w-xl font-body-md text-body-md text-secondary">
+                La portada de SkateMentor es pública. Para ver perfiles y datos
+                de contacto, inicia sesión o crea una cuenta de estudiante.
+              </p>
+              <Link
+                className="mt-space-sm inline-flex items-center gap-space-xs rounded-lg bg-primary px-space-lg py-3 font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container"
+                href="/login?next=%2F%23skatersGrid"
+              >
+                Iniciar sesión o crear cuenta
+                <span className="material-symbols-outlined text-[18px]">
+                  login
+                </span>
+              </Link>
             </div>
           )}
         </div>

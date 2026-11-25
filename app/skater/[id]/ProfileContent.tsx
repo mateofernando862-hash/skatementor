@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   SKATERS,
   type SkaterProfile,
@@ -9,9 +10,9 @@ import {
 } from "../../data/skaters";
 import {
   isAdminEmail,
+  isValidAccountEmail,
   VALID_ACCOUNTS,
 } from "../../../lib/auth";
-import { isValidAccountEmail } from "../../../lib/auth";
 import { getLocalVideo } from "../../../lib/local-media";
 
 const REGISTERED_SKATERS_KEY = "skatementor_registered_skaters";
@@ -19,8 +20,16 @@ const ADMIN_REVIEWS_KEY = "skatementor_admin_reviews";
 const ADMIN_VERIFICATIONS_KEY = "skatementor_admin_verifications";
 const STUDENT_REVIEWS_KEY = "skatementor_student_reviews";
 
-export default function SkaterProfilePage({ id }: { id: string }) {
+export default function SkaterProfilePage({
+  id,
+  returnPath,
+}: {
+  id: string;
+  returnPath?: string;
+}) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminName, setAdminName] = useState("");
   const [adminComment, setAdminComment] = useState("");
@@ -33,14 +42,23 @@ export default function SkaterProfilePage({ id }: { id: string }) {
   const [studentRating, setStudentRating] = useState(5);
   const [studentReviews, setStudentReviews] = useState<StudentReview[]>([]);
   const [localVideoUrl, setLocalVideoUrl] = useState("");
+  const [isProfileChecked, setIsProfileChecked] = useState(false);
 
   const skaterId = Number(id);
-  const [skater, setSkater] = useState<SkaterProfile | undefined>(() =>
-    SKATERS.find((item) => item.id === skaterId)
-  );
+  const loginUrl = `/login?next=${encodeURIComponent(
+    returnPath || `/skater/${skaterId}/`
+  )}`;
+  const [skater, setSkater] = useState<SkaterProfile | undefined>();
 
   useEffect(() => {
-    if (skater) return;
+    if (!isAuthenticated) return;
+
+    const defaultSkater = SKATERS.find((item) => item.id === skaterId);
+    if (defaultSkater) {
+      setSkater(defaultSkater);
+      setIsProfileChecked(true);
+      return;
+    }
 
     try {
       const stored = localStorage.getItem(REGISTERED_SKATERS_KEY);
@@ -50,12 +68,16 @@ export default function SkaterProfilePage({ id }: { id: string }) {
       setSkater(
         registered.find((item) => item.id === skaterId)
       );
+      setIsProfileChecked(true);
     } catch {
       setSkater(undefined);
+      setIsProfileChecked(true);
     }
-  }, [skater, skaterId]);
+  }, [isAuthenticated, skaterId]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     let activeUrl = "";
     if (skaterId >= 1000) {
       getLocalVideo(`skater-${skaterId}`)
@@ -70,7 +92,7 @@ export default function SkaterProfilePage({ id }: { id: string }) {
     return () => {
       if (activeUrl) URL.revokeObjectURL(activeUrl);
     };
-  }, [skaterId]);
+  }, [isAuthenticated, skaterId]);
 
   useEffect(() => {
     const session = document.cookie
@@ -81,16 +103,24 @@ export default function SkaterProfilePage({ id }: { id: string }) {
     if (!session) {
       setIsAdmin(false);
       setIsAuthenticated(false);
+      setIsAuthChecked(true);
+      router.replace(loginUrl);
       return;
     }
 
     try {
       const email = decodeURIComponent(session);
+      const authenticated = isValidAccountEmail(email);
+      setIsAuthenticated(authenticated);
       const account = VALID_ACCOUNTS.find(
         (item) => item.email.toLowerCase() === email.trim().toLowerCase()
       );
       setIsAdmin(isAdminEmail(email));
-      setIsAuthenticated(isValidAccountEmail(email));
+      setIsAuthChecked(true);
+      if (!authenticated) {
+        router.replace(loginUrl);
+        return;
+      }
       setAdminName(
         account?.email === "vidal@skatementor.com"
           ? "Vidal Niebles"
@@ -100,6 +130,10 @@ export default function SkaterProfilePage({ id }: { id: string }) {
       );
     } catch {
       setIsAdmin(false);
+      setIsAuthenticated(false);
+      setIsAuthChecked(true);
+      router.replace(loginUrl);
+      return;
     }
 
     try {
@@ -126,7 +160,15 @@ export default function SkaterProfilePage({ id }: { id: string }) {
       setAdminReviews([]);
       setIsVerified(false);
     }
-  }, [skaterId]);
+  }, [loginUrl, router, skaterId]);
+
+  if (!isAuthChecked || !isAuthenticated || !isProfileChecked) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center font-body-md text-secondary">
+        Verificando acceso...
+      </div>
+    );
+  }
 
   if (!skater) {
     return (

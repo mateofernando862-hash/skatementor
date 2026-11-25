@@ -41,6 +41,7 @@ Es un proyecto académico de Buenas Prácticas de Desarrollo de Software de la U
 - Avatar predeterminado para perfiles y reseñas.
 - Clip opcional de presentación en formato MP4 o WebM.
 - Almacenamiento local de perfiles, reseñas y clips en el navegador.
+- Landing pública; se requiere iniciar sesión para explorar el catálogo y los perfiles completos.
 
 ## Tecnologías
 
@@ -54,6 +55,8 @@ Es un proyecto académico de Buenas Prácticas de Desarrollo de Software de la U
 - Amazon Route 53 para el DNS del dominio personalizado.
 
 > Actualmente no existe una base de datos activa ni carga dinámica de fotos o videos a S3. Los perfiles, cuentas y reseñas creados desde la interfaz se guardan en `localStorage`; los clips se guardan en IndexedDB. Esos datos no se comparten automáticamente entre dispositivos o navegadores.
+
+> **Límite de acceso:** el requisito de inicio de sesión se aplica en la interfaz del sitio estático. No es una protección de seguridad de servidor; para proteger datos realmente se necesita autenticación y autorización en un backend.
 
 ## Getting Started
 

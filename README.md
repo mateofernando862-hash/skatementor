@@ -65,7 +65,7 @@ Requisitos: Node.js 20 o superior y npm.
 ```bash
 git clone https://github.com/mateofernando862-hash/skatementor.git
 cd skatementor
-npm install
+npm ci
 npm run dev
 ```
 
